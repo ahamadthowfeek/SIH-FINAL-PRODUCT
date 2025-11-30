@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Results - EV Route Optimizer</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="light-mode">
+    <div class="container">
+        <header class="dashboard-header">
+            <div class="header-content">
+                <h1>EV Route Optimizer</h1>
+                <div class="user-info">
+                    <span id="userVehicleNumber">Results</span>
+                    <button class="btn-secondary" onclick="goHome()">Back to Home</button>
+                    <button class="btn-secondary" onclick="logout()">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="results-container">
+            <h2>Optimization Results</h2>
+            
+            <div id="loadingMessage" style="text-align: center; padding: 2rem;">
+                <h3>Loading results...</h3>
+            </div>
+            
+            <div id="resultsContent" style="display: none;">
+                <div class="results-summary">
+                    <div class="summary-card">
+                        <h3>Total Distance</h3>
+                        <div class="value" id="totalDistance">- km</div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>Estimated Time</h3>
+                        <div class="value" id="estimatedTime">- min</div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>Effective Range</h3>
+                        <div class="value" id="effectiveRange">- km</div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>Algorithm Used</h3>
+                        <div class="value" id="algorithmUsed">-</div>
+                    </div>
+                </div>
+
+                <h3>Optimized Route</h3>
+                <div class="route-list">
+                    <div class="route-header">Delivery Sequence</div>
+                    <div id="routeSequence"></div>
+                </div>
+
+                <div class="route-actions" style="margin-top: 2rem; text-align: center; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn-primary" onclick="navigateToMap()">Navigate with Maps</button>
+                    <button class="btn-secondary" onclick="goHome()">Optimize Another Route</button>
+                    <button class="btn-secondary" onclick="downloadRouteSummary()">Download Summary</button>
+                    <button class="btn-secondary" onclick="shareResults()">Share Results</button>
+                </div>
+            </div>
+            
+            <div id="errorMessage" style="display: none; text-align: center; color: var(--error-color); padding: 2rem;">
+                <h3>No optimization results found</h3>
+                <p>Please go back and optimize a route first.</p>
+                <button class="btn-primary" onclick="goHome()">Back to Home</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="theme-toggle">
+        <button id="themeToggle">🌙</button>
+    </div>
+
+    <script src="js/results.js"></script>
+</body>
+</html>
