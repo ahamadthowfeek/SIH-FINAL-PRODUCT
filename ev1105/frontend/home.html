@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home - EV Route Optimizer</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="light-mode">
+    <div class="container">
+        <header class="dashboard-header">
+            <div class="header-content">
+                <h1>EV Route Optimizer</h1>
+                <div class="user-info">
+                    <span id="userVehicleNumber">Welcome</span>
+                    <button class="btn-secondary" onclick="logout()">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="dashboard-main">
+            <div class="input-section">
+                <h2>Route Optimization</h2>
+                
+                <div class="vehicle-status">
+                    <div class="status-card">
+                        <h3>Current Vehicle Status</h3>
+                        <div class="status-grid">
+                            <div class="form-group">
+                                <label for="batteryPercentage">Battery Percentage</label>
+                                <input type="number" id="batteryPercentage" min="0" max="100" value="80" required>
+                                <span class="unit">%</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="temperature">Temperature</label>
+                                <input type="number" id="temperature" min="-10" max="50" value="25" required>
+                                <span class="unit">°C</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="loadCarry">Load Carry</label>
+                                <input type="number" id="loadCarry" min="0" max="500" value="50" required>
+                                <span class="unit">kg</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="customer-input">
+                    <h3>Customer Details</h3>
+                    <div class="input-methods">
+                        <div class="method-tabs">
+                            <button class="tab-btn active" onclick="showTab('manual')">Manual Input</button>
+                            <button class="tab-btn" onclick="showTab('upload')">Upload CSV/Excel</button>
+                        </div>
+                        
+                        <div id="manualTab" class="tab-content active">
+                            <div id="customerFields">
+                                <div class="customer-row">
+                                    <input type="text" placeholder="Customer Name" class="customer-name">
+                                    <input type="text" placeholder="Address" class="customer-address">
+                                    <button class="btn-remove" onclick="removeCustomer(this)">×</button>
+                                </div>
+                            </div>
+                            <button class="btn-secondary" onclick="addCustomer()">Add Customer</button>
+                        </div>
+                        
+                        <div id="uploadTab" class="tab-content">
+                            <div class="upload-area">
+                                <input type="file" id="fileUpload" accept=".csv,.xlsx,.xls">
+                                <label for="fileUpload" class="upload-label">
+                                    <span>📁 Upload CSV or Excel File</span>
+                                    <small>Supported formats: CSV, Excel</small>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="algorithm-selection">
+                    <h3>Optimization Algorithm</h3>
+                    <select id="algorithmSelect">
+                        <option value="SA">Simulated Annealing (SA)</option>
+                        <option value="GA">Genetic Algorithm (GA)</option>
+                        <option value="ACO">Ant Colony Optimization (ACO)</option>
+                        <option value="PSO">Particle Swarm Optimization (PSO)</option>
+                    </select>
+                </div>
+
+                <button class="btn-primary" onclick="optimizeRoute()">Optimize Route</button>
+            </div>
+        </main>
+    </div>
+
+    <div class="theme-toggle">
+        <button id="themeToggle">🌙</button>
+    </div>
+
+    <script>
+        // Theme Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const currentTheme = localStorage.getItem('theme') || 'light-mode';
+
+        document.body.className = currentTheme;
+        updateThemeButton();
+
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('light-mode');
+            document.body.classList.toggle('dark-mode');
+            
+            const newTheme = document.body.className;
+            localStorage.setItem('theme', newTheme);
+            updateThemeButton();
+        });
+
+        function updateThemeButton() {
+            if (document.body.classList.contains('dark-mode')) {
+                themeToggle.textContent = '☀️';
+            } else {
+                themeToggle.textContent = '🌙';
+            }
+        }
+
+        // Tab functionality
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            
+            // Activate selected button
+            event.target.classList.add('active');
+        }
+
+        // Customer management
+        function addCustomer() {
+            const customerFields = document.getElementById('customerFields');
+            const customerRow = document.createElement('div');
+            customerRow.className = 'customer-row';
+            customerRow.innerHTML = `
+                <input type="text" placeholder="Customer Name" class="customer-name">
+                <input type="text" placeholder="Address" class="customer-address">
+                <button class="btn-remove" onclick="removeCustomer(this)">×</button>
+            `;
+            customerFields.appendChild(customerRow);
+        }
+
+        function removeCustomer(button) {
+            button.parentElement.remove();
+        }
+
+        // Route optimization
+        async function optimizeRoute() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user) {
+                alert('Please login first.');
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            // Show loading state
+            const optimizeBtn = event.target;
+            const originalText = optimizeBtn.textContent;
+            optimizeBtn.textContent = 'Optimizing...';
+            optimizeBtn.disabled = true;
+            
+            // Collect customer data
+            const customerRows = document.querySelectorAll('.customer-row');
+            const customerData = [];
+            
+            customerRows.forEach((row, index) => {
+                const name = row.querySelector('.customer-name').value;
+                const address = row.querySelector('.customer-address').value;
+                
+                if (name && address) {
+                    customerData.push({
+                        id: index + 1,
+                        name: name,
+                        address: address,
+                        lat: 12.9716 + (Math.random() * 0.1 - 0.05), // Random coordinates for demo
+                        lng: 77.5946 + (Math.random() * 0.1 - 0.05)
+                    });
+                }
+            });
+            
+            if (customerData.length === 0) {
+                alert('Please add at least one customer.');
+                optimizeBtn.textContent = originalText;
+                optimizeBtn.disabled = false;
+                return;
+            }
+            
+            const optimizationData = {
+                vehicle_number: user.vehicle_number,
+                algorithm: document.getElementById('algorithmSelect').value,
+                customer_data: customerData,
+                battery_percentage: parseFloat(document.getElementById('batteryPercentage').value),
+                temperature: parseFloat(document.getElementById('temperature').value),
+                load_carry: parseFloat(document.getElementById('loadCarry').value),
+                vehicle_range: user.vehicle_range
+            };
+            
+            console.log('Sending optimization data:', optimizationData);
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/optimize', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(optimizationData)
+                });
+                
+                const data = await response.json();
+                console.log('Optimization response:', data);
+                
+                if (response.ok) {
+                    // Store results and redirect to results page
+                    localStorage.setItem('optimizationResults', JSON.stringify({
+                        ...data,
+                        algorithm: optimizationData.algorithm,
+                        customer_data: optimizationData.customer_data
+                    }));
+                    window.location.href = 'results.html';
+                } else {
+                    alert('Error: ' + (data.error || 'Optimization failed'));
+                }
+            } catch (error) {
+                console.error('Optimization error:', error);
+                alert('Optimization failed. Please check if the backend server is running on port 5000.');
+            } finally {
+                optimizeBtn.textContent = originalText;
+                optimizeBtn.disabled = false;
+            }
+        }
+
+        // File upload handling
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileUpload = document.getElementById('fileUpload');
+            if (fileUpload) {
+                fileUpload.addEventListener('change', handleFileUpload);
+            }
+            
+            // Load user info
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (user && document.getElementById('userVehicleNumber')) {
+                document.getElementById('userVehicleNumber').textContent = `Welcome, ${user.vehicle_number}`;
+            }
+            
+            // Initialize with one customer row
+            addCustomer();
+        });
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                // For demo purposes, we'll add some sample customers
+                // In real implementation, parse CSV/Excel file
+                alert(`File "${file.name}" uploaded successfully! Processing demo data...`);
+                addSampleCustomers();
+            }
+        }
+
+        function addSampleCustomers() {
+            const sampleCustomers = [
+                { name: "Customer 1", address: "MG Road, Bangalore" },
+                { name: "Customer 2", address: "Koramangala, Bangalore" },
+                { name: "Customer 3", address: "Whitefield, Bangalore" },
+                { name: "Customer 4", address: "Electronic City, Bangalore" }
+            ];
+            
+            const customerFields = document.getElementById('customerFields');
+            customerFields.innerHTML = '';
+            
+            sampleCustomers.forEach(customer => {
+                const customerRow = document.createElement('div');
+                customerRow.className = 'customer-row';
+                customerRow.innerHTML = `
+                    <input type="text" class="customer-name" value="${customer.name}">
+                    <input type="text" class="customer-address" value="${customer.address}">
+                    <button class="btn-remove" onclick="removeCustomer(this)">×</button>
+                `;
+                customerFields.appendChild(customerRow);
+            });
+        }
+
+        function logout() {
+            localStorage.removeItem('user');
+            localStorage.removeItem('optimizationResults');
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
